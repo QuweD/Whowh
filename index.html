@@ -3,380 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gartic Enhanced Pro - Player Analytics</title>
+    <title>Gartic Enhanced Pro v2.5</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #6c5ce7;
-            --secondary-color: #a55eea;
-            --background: #0f0f1a;
-            --surface: #1a1a2e;
-            --text: #ffffff;
-            --text-secondary: rgba(255,255,255,0.7);
-            --border: rgba(108, 92, 231, 0.2);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background: var(--background);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .app-wrapper {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            background: var(--surface);
-            padding: 2rem;
-            border-right: 1px solid var(--border);
-            position: fixed;
-            height: 100vh;
-            width: 280px;
-            overflow-y: auto;
-        }
-
-        .main-content {
-            margin-left: 280px;
-            padding: 2rem;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .nav-item {
-            padding: 1rem;
-            margin: 0.5rem 0;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .nav-item:hover {
-            background: rgba(108, 92, 231, 0.1);
-            transform: translateX(5px);
-        }
-
-        .nav-item.active {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: 15px;
-            border: 1px solid var(--border);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .players-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .player-card {
-            background: var(--surface);
-            border-radius: 15px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .player-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 0;
-        }
-
-        .player-card:hover::before {
-            opacity: 0.1;
-        }
-
-        .player-info {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .player-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid var(--primary-color);
-            transition: transform 0.3s ease;
-        }
-
-        .player-card:hover .player-avatar {
-            transform: scale(1.1);
-        }
-
-        .player-details {
-            flex: 1;
-        }
-
-        .player-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .player-stats {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .stat {
-            background: rgba(108, 92, 231, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        .search-container {
-            position: relative;
-            margin-bottom: 2rem;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            padding-left: 3rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 20px rgba(108, 92, 231, 0.2);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .player-card {
-            animation: fadeInUp 0.5s ease forwards;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .stat-card:hover .stat-value {
-            animation: pulse 1s infinite;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 15, 26, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 3px solid var(--border);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s infinite linear;
-        }
-
-        @keyframes spin {
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .filters {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 0.8rem 1.5rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .filter-btn:hover {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .filter-btn.active {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-wrapper">
+    <div class="app-container">
         <aside class="sidebar">
-            <div class="logo">
-                <i class="fas fa-gamepad"></i>
-                Gartic Enhanced Pro
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-gamepad"></i>
+                    <span>Gartic Enhanced</span>
+                </div>
+                <div class="version">v2.5 PRO</div>
             </div>
-            <nav>
-                <div class="nav-item active">
+            
+            <nav class="nav-menu">
+                <div class="nav-item active" data-page="dashboard">
                     <i class="fas fa-home"></i>
-                    Dashboard
+                    <span>Dashboard</span>
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" data-page="players">
                     <i class="fas fa-users"></i>
-                    Players
+                    <span>Players</span>
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" data-page="rooms">
+                    <i class="fas fa-door-open"></i>
+                    <span>Rooms</span>
+                </div>
+                <div class="nav-item" data-page="stats">
                     <i class="fas fa-chart-line"></i>
-                    Statistics
+                    <span>Statistics</span>
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
-                    Settings
+                    <span>Settings</span>
                 </div>
             </nav>
+
+            <div class="sidebar-footer">
+                <div class="connection-status">
+                    <div class="status-indicator"></div>
+                    <span>Connected</span>
+                </div>
+                <div class="bypass-status">
+                    <div class="bypass-indicator"></div>
+                    <span>Bypass Active</span>
+                </div>
+            </div>
         </aside>
 
         <main class="main-content">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Search players...">
-            </div>
+            <header class="top-bar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="search-input" placeholder="Search players, rooms...">
+                    <div class="search-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="players">Players</button>
+                        <button class="filter-btn" data-filter="rooms">Rooms</button>
+                    </div>
+                </div>
 
-            <div class="filters">
-                <button class="filter-btn active">All Players</button>
-                <button class="filter-btn">Online</button>
-                <button class="filter-btn">Top Ranked</button>
-                <button class="filter-btn">Custom Profile</button>
-            </div>
+                <div class="top-actions">
+                    <button class="action-btn refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Refresh</span>
+                    </button>
+                    <button class="action-btn settings-btn">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                </div>
+            </header>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Total Players</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Active Rooms</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Top Players</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Custom Profiles</div>
-                </div>
-            </div>
+            <div class="dashboard-grid">
+                <div class="stats-container">
+                    <div class="stat-card total-players">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Total Players</div>
+                        </div>
+                        <div class="stat-chart"></div>
+                    </div>
 
-            <div class="players-grid">
-                <!-- Player cards will be dynamically added here -->
+                    <div class="stat-card active-rooms">
+                        <div class="stat-icon">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Active Rooms</div>
+                        </div>
+                        <div class="stat-chart"></div>
+                    </div>
+
+                    <div class="stat-card custom-profiles">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Custom Profiles</div>
+                        </div>
+                        <div class="stat-chart"></div>
+                    </div>
+
+                    <div class="stat-card bypass-success">
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">0%</div>
+                            <div class="stat-label">Bypass Success</div>
+                        </div>
+                        <div class="stat-chart"></div>
+                    </div>
+                </div>
+
+                <div class="realtime-container">
+                    <div class="section-header">
+                        <h2>Realtime Activity</h2>
+                        <div class="header-actions">
+                            <button class="action-btn">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <select class="time-range">
+                                <option value="1h">Last Hour</option>
+                                <option value="24h">Last 24H</option>
+                                <option value="7d">Last 7 Days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="activity-chart"></div>
+                </div>
+
+                <div class="rooms-grid">
+                    <div class="section-header">
+                        <h2>Active Rooms</h2>
+                        <div class="header-actions">
+                            <button class="action-btn">
+                                <i class="fas fa-sort"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="rooms-container"></div>
+                </div>
+
+                <div class="players-grid">
+                    <div class="section-header">
+                        <h2>Top Players</h2>
+                        <div class="header-actions">
+                            <button class="action-btn">
+                                <i class="fas fa-trophy"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="players-container"></div>
+                </div>
             </div>
         </main>
     </div>
 
     <div class="loading-overlay">
-        <div class="loader"></div>
+        <div class="loading-content">
+            <div class="loader">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">Initializing System</div>
+            </div>
+            <div class="loading-progress">
+                <div class="progress-track">
+                    <div class="progress-bar"></div>
+                </div>
+                <div class="progress-status">
+                    <span class="progress-percentage">0%</span>
+                    <span class="progress-message">Loading...</span>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <div class="context-menu">
+        <div class="menu-item">
+            <i class="fas fa-eye"></i>
+            <span>View Profile</span>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Join Room</span>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-user-plus"></i>
+            <span>Follow Player</span>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-ban"></i>
+            <span>Block Player</span>
+        </div>
+        <div class="menu-separator"></div>
+        <div class="menu-item">
+            <i class="fas fa-copy"></i>
+            <span>Copy User ID</span>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="load.js"></script>
+    <script src="bypass.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
