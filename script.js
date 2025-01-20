@@ -1,329 +1,332 @@
-// Core Configuration
+// Temel Ayarlar
 const CONFIG = {
-    WS_SERVERS: ['01', '02', '03', '04', '05', '06'],
-    WS_URL: 'wss://server{}.gartic.io/',
     API_URL: 'https://gartic.io/req/',
-    ENDPOINTS: {
-        ROOMS: 'list',
-        PLAYER: 'player',
-        DRAW: 'draw'
-    },
-    UPDATE_INTERVAL: 3000,
-    RETRY_ATTEMPTS: 3,
-    BYPASS_METHODS: ['direct', 'websocket', 'iframe']
+    WS_URL: 'wss://server{}.gartic.io/',
+    SUNUCULAR: ['01', '02', '03', '04', '05', '06'],
+    GUNCELLEME_SURESI: 3000,
+    DENEME_SAYISI: 3,
+    BYPASS_METODLARI: ['iframe', 'websocket', 'xhr']
 };
 
-// WebSocket Handler
-class WebSocketManager {
+// WebSocket Yöneticisi
+class WebSocketYonetici {
     constructor() {
-        this.connections = new Map();
-        this.messageQueue = [];
-        this.reconnectAttempts = 0;
+        this.baglanti = new Map();
+        this.mesajKuyrugu = [];
+        this.yenidenBaglanmaSayisi = 0;
+        this.aktifSunucu = null;
     }
 
-    connect(server) {
-        const ws = new WebSocket(CONFIG.WS_URL.replace('{}', server));
+    baglan(sunucu) {
+        const ws = new WebSocket(CONFIG.WS_URL.replace('{}', sunucu));
         
         ws.onopen = () => {
-            console.log(`Connected to server ${server}`);
-            this.initializeConnection(ws, server);
+            console.log(`${sunucu} sunucusuna bağlanıldı`);
+            this.baglantiKur(ws, sunucu);
         };
 
-        ws.onmessage = (event) => this.handleMessage(event.data, server);
+        ws.onmessage = (event) => this.mesajAl(event.data, sunucu);
         
-        ws.onerror = (error) => {
-            console.error(`WebSocket error on server ${server}:`, error);
-            this.handleError(server);
+        ws.onerror = (hata) => {
+            console.error(`WebSocket hatası (${sunucu}):`, hata);
+            this.hataYonet(sunucu);
         };
 
-        ws.onclose = () => this.handleClose(server);
+        ws.onclose = () => this.baglantiyiKapat(sunucu);
         
-        this.connections.set(server, ws);
+        this.baglanti.set(sunucu, ws);
     }
 
-    initializeConnection(ws, server) {
+    baglantiKur(ws, sunucu) {
         ws.send('2probe');
         ws.send('5');
-        this.joinAllRooms(server);
+        this.odalaraKatil(sunucu);
+        this.aktifSunucu = sunucu;
+        uygulama.durumGuncelle('bağlı');
     }
 
-    handleMessage(data, server) {
-        if (data.startsWith('42')) {
+    mesajAl(veri, sunucu) {
+        if (veri.startsWith('42')) {
             try {
-                const parsedData = JSON.parse(data.slice(2));
-                this.processMessage(parsedData, server);
-            } catch (error) {
-                console.error('Message parsing error:', error);
+                const [olay, data] = JSON.parse(veri.slice(2));
+                this.mesajIsleme(olay, data, sunucu);
+            } catch (hata) {
+                console.error('Mesaj ayrıştırma hatası:', hata);
             }
         }
     }
 
-    processMessage([event, data]) {
-        switch(event) {
-            case 'rooms':
-                app.updateRooms(data);
+    mesajIsleme(olay, veri, sunucu) {
+        switch(olay) {
+            case 'odalar':
+                uygulama.odalariGuncelle(veri);
                 break;
-            case 'players':
-                app.updatePlayers(data);
+            case 'oyuncular':
+                uygulama.oyunculariGuncelle(veri);
                 break;
-            case 'draw':
-                app.handleDrawData(data);
+            case 'cizim':
+                uygulama.cizimVerisiAl(veri);
                 break;
         }
     }
 
-    joinRoom(roomCode) {
-        this.connections.forEach(ws => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(`42["join",{"sala":"${roomCode}","v":20000}]`);
-            }
-        });
+    odayaKatil(odaKodu) {
+        const mesaj = `42["katil",{"oda":"${odaKodu}","v":20000}]`;
+        this.mesajGonder(mesaj);
     }
 
-    broadcastMessage(message) {
-        this.connections.forEach(ws => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(message);
-            }
-        });
+    mesajGonder(mesaj) {
+        if (this.aktifSunucu && this.baglanti.get(this.aktifSunucu)?.readyState === WebSocket.OPEN) {
+            this.baglanti.get(this.aktifSunucu).send(mesaj);
+        } else {
+            this.mesajKuyrugu.push(mesaj);
+        }
     }
 }
 
-// Bypass System
-class BypassSystem {
+// Bypass Sistemi
+class BypassSistemi {
     constructor() {
-        this.currentMethod = CONFIG.BYPASS_METHODS[0];
-        this.successRate = 100;
-        this.blocked = false;
+        this.metod = CONFIG.BYPASS_METODLARI[0];
+        this.basariOrani = 100;
+        this.engellendi = false;
+        this.iframe = null;
     }
 
-    async initialize() {
-        await this.setupBypass();
-        this.startHeartbeat();
+    async baslat() {
+        await this.bypassKur();
+        this.nabizKontrol();
     }
 
-    async setupBypass() {
-        const frame = document.createElement('iframe');
-        frame.style.display = 'none';
-        frame.src = 'https://gartic.io';
-        document.body.appendChild(frame);
+    async bypassKur() {
+        this.iframe = document.createElement('iframe');
+        this.iframe.style.display = 'none';
+        this.iframe.src = 'https://gartic.io';
+        document.body.appendChild(this.iframe);
 
         return new Promise(resolve => {
-            frame.onload = () => {
-                this.frame = frame;
+            this.iframe.onload = () => {
+                console.log('Bypass iframe yüklendi');
                 resolve();
             };
         });
     }
 
-    async fetchWithBypass(endpoint, options = {}) {
-        if (this.blocked) {
-            await this.rotateMethod();
+    async veriCek(endpoint, ayarlar = {}) {
+        if (this.engellendi) {
+            await this.metodDegistir();
         }
 
         try {
-            const response = await this.executeRequest(endpoint, options);
-            this.updateSuccessRate(true);
-            return response;
-        } catch (error) {
-            this.updateSuccessRate(false);
-            throw error;
+            const yanit = await this.istekGonder(endpoint, ayarlar);
+            this.basariOraniniGuncelle(true);
+            return yanit;
+        } catch (hata) {
+            this.basariOraniniGuncelle(false);
+            throw hata;
         }
     }
 
-    async executeRequest(endpoint, options) {
-        switch (this.currentMethod) {
-            case 'direct':
-                return this.directRequest(endpoint, options);
-            case 'websocket':
-                return this.wsRequest(endpoint, options);
+    async istekGonder(endpoint, ayarlar) {
+        const url = CONFIG.API_URL + endpoint;
+        const varsayilanAyarlar = {
+            headers: {
+                'Origin': 'https://gartic.io',
+                'Referer': 'https://gartic.io/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
+            }
+        };
+
+        const istekAyarlari = { ...varsayilanAyarlar, ...ayarlar };
+        
+        switch (this.metod) {
             case 'iframe':
-                return this.iframeRequest(endpoint, options);
-            default:
-                throw new Error('Invalid bypass method');
+                return this.iframeIstegi(url, istekAyarlari);
+            case 'websocket':
+                return this.wsIstegi(url, istekAyarlari);
+            case 'xhr':
+                return this.xhrIstegi(url, istekAyarlari);
         }
     }
 
-    updateSuccessRate(success) {
-        const weight = 0.3;
-        this.successRate = this.successRate * (1 - weight) + (success ? 100 : 0) * weight;
-        app.updateBypassStatus(this.successRate);
-    }
-
-    startHeartbeat() {
-        setInterval(() => {
-            this.checkConnection();
-        }, 30000);
+    basariOraniniGuncelle(basarili) {
+        const agirlik = 0.3;
+        this.basariOrani = this.basariOrani * (1 - agirlik) + (basarili ? 100 : 0) * agirlik;
+        uygulama.bypassDurumunuGuncelle(this.basariOrani);
     }
 }
 
-// Main Application
-class GarticEnhanced {
+// Ana Uygulama
+class GarticHack {
     constructor() {
-        this.ws = new WebSocketManager();
-        this.bypass = new BypassSystem();
-        this.rooms = new Map();
-        this.players = new Map();
-        this.stats = {
-            totalPlayers: 0,
-            activeRooms: 0,
-            totalPoints: 0,
-            bypassRate: 100
-        };
+        this.ws = new WebSocketYonetici();
+        this.bypass = new BypassSistemi();
+        this.odalar = new Map();
+        this.oyuncular = new Map();
+        this.yuklemeEkrani = document.getElementById('yukleniyor');
+        this.oyuncuListesi = document.getElementById('oyuncuListe');
+        this.odaListesi = document.getElementById('odaListe');
     }
 
-    async initialize() {
+    async baslat() {
         try {
-            await this.bypass.initialize();
-            this.initializeWebSockets();
-            this.setupEventListeners();
-            this.startUpdateCycle();
-            this.updateUI();
-        } catch (error) {
-            console.error('Initialization error:', error);
-            this.showError('Failed to initialize application');
+            this.yuklemeGoster('Sistem başlatılıyor...', 0);
+            await this.bypass.baslat();
+            this.yuklemeGoster('Bypass sistemi hazır', 30);
+            
+            await this.sunucularaBaglan();
+            this.yuklemeGoster('Sunuculara bağlanıldı', 60);
+            
+            await this.ilkVerileriYukle();
+            this.yuklemeGoster('Veriler yüklendi', 90);
+            
+            this.olaylariKur();
+            this.guncellemeBaslat();
+            
+            this.yuklemeGoster('Sistem hazır', 100);
+            setTimeout(() => this.yuklemeGizle(), 1000);
+        } catch (hata) {
+            console.error('Başlatma hatası:', hata);
+            this.hataGoster('Sistem başlatılamadı');
         }
     }
 
-    initializeWebSockets() {
-        CONFIG.WS_SERVERS.forEach(server => {
-            this.ws.connect(server);
+    async sunucularaBaglan() {
+        CONFIG.SUNUCULAR.forEach(sunucu => {
+            this.ws.baglan(sunucu);
         });
     }
 
-    setupEventListeners() {
-        document.querySelector('.refresh-btn')?.addEventListener('click', () => this.refreshData());
-        document.querySelector('.search-input')?.addEventListener('input', (e) => this.handleSearch(e.target.value));
-        
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => this.changePage(item.dataset.page));
-        });
-    }
-
-    async refreshData() {
+    async ilkVerileriYukle() {
         try {
-            const rooms = await this.bypass.fetchWithBypass(CONFIG.ENDPOINTS.ROOMS);
-            this.updateRooms(rooms);
-            this.updateStats();
-            this.showSuccess('Data refreshed successfully');
-        } catch (error) {
-            this.showError('Failed to refresh data');
+            const odalar = await this.bypass.veriCek('list');
+            this.odalariGuncelle(odalar);
+        } catch (hata) {
+            console.error('Veri yükleme hatası:', hata);
+            throw hata;
         }
     }
 
-    updateRooms(rooms) {
-        this.rooms.clear();
-        rooms.forEach(room => {
-            if (room.quant > 0) {
-                this.rooms.set(room.code, {
-                    code: room.code,
-                    players: room.quant,
-                    language: room.lang,
-                    timestamp: Date.now()
+    odalariGuncelle(odalar) {
+        this.odalar.clear();
+        odalar.forEach(oda => {
+            if (oda.quant > 0) {
+                this.odalar.set(oda.code, {
+                    kod: oda.code,
+                    oyuncuSayisi: oda.quant,
+                    dil: oda.lang,
+                    zaman: Date.now()
                 });
             }
         });
-        this.updateUI();
+        this.arayuzuGuncelle();
     }
 
-    updatePlayers(data) {
-        if (data.players) {
-            data.players.forEach(player => {
-                this.players.set(player.id, {
-                    id: player.id,
-                    name: player.nick,
-                    points: player.points,
-                    avatar: player.avatar,
-                    room: data.room,
-                    lastSeen: Date.now()
+    oyunculariGuncelle(veri) {
+        if (veri.oyuncular) {
+            veri.oyuncular.forEach(oyuncu => {
+                this.oyuncular.set(oyuncu.id, {
+                    id: oyuncu.id,
+                    isim: oyuncu.nick,
+                    puan: oyuncu.points,
+                    avatar: oyuncu.avatar,
+                    oda: veri.oda,
+                    sonGorulme: Date.now()
                 });
             });
-            this.updateStats();
-            this.updateUI();
+            this.arayuzuGuncelle();
         }
     }
 
-    updateStats() {
-        this.stats.totalPlayers = this.players.size;
-        this.stats.activeRooms = this.rooms.size;
-        this.stats.totalPoints = Array.from(this.players.values())
-            .reduce((sum, player) => sum + player.points, 0);
+    arayuzuGuncelle() {
+        // İstatistikleri güncelle
+        document.getElementById('oyuncuSayi').textContent = this.oyuncular.size;
+        document.getElementById('odaSayi').textContent = this.odalar.size;
         
-        Object.entries(this.stats).forEach(([key, value]) => {
-            const element = document.querySelector(`[data-stat="${key}"]`);
-            if (element) {
-                element.textContent = typeof value === 'number' ? 
-                    value.toLocaleString() : value;
-            }
-        });
+        // Oyuncu listesini güncelle
+        if (this.oyuncuListesi) {
+            this.oyuncuListesi.innerHTML = Array.from(this.oyuncular.values())
+                .map(oyuncu => this.oyuncuKartiOlustur(oyuncu))
+                .join('');
+        }
     }
 
-    updateUI() {
-        this.updatePlayersList();
-        this.updateRoomsList();
-    }
-
-    updatePlayersList() {
-        const container = document.getElementById('playersContainer');
-        if (!container) return;
-
-        const playerCards = Array.from(this.players.values())
-            .map(player => this.createPlayerCard(player))
-            .join('');
-
-        container.innerHTML = playerCards;
-    }
-
-    createPlayerCard(player) {
+    oyuncuKartiOlustur(oyuncu) {
         return `
-            <div class="player-card" data-player-id="${player.id}">
-                <div class="player-header">
-                    <img src="https://gartic.io/static/images/avatar/svg/${player.avatar}.svg" 
-                         alt="${player.name}" class="player-avatar">
-                    <div class="player-info">
-                        <div class="player-name">${player.name}</div>
-                        <div class="player-room">Room: ${player.room}</div>
+            <div class="oyuncu-kart" data-id="${oyuncu.id}">
+                <div class="oyuncu-ust">
+                    <img src="https://gartic.io/static/images/avatar/svg/${oyuncu.avatar}.svg" 
+                         alt="${oyuncu.isim}" class="avatar">
+                    <div class="bilgi">
+                        <div class="isim">${oyuncu.isim}</div>
+                        <div class="oda">Oda: ${oyuncu.oda}</div>
                     </div>
                 </div>
-                <div class="player-stats">
-                    <div class="stat">
-                        <span class="stat-label">Points</span>
-                        <span class="stat-value">${player.points.toLocaleString()}</span>
+                <div class="oyuncu-alt">
+                    <div class="puan">
+                        <i class="fas fa-star"></i>
+                        <span>${oyuncu.puan}</span>
                     </div>
-                </div>
-                <div class="player-actions">
-                    <button onclick="app.joinRoom('${player.room}')" class="action-btn">
-                        Join Room
+                    <button onclick="uygulama.odayaKatil('${oyuncu.oda}')" class="katil-btn">
+                        Katıl
                     </button>
                 </div>
             </div>
         `;
     }
 
-    showSuccess(message) {
-        this.showToast(message, 'success');
+    odayaKatil(odaKodu) {
+        window.open(`https://gartic.io/${odaKodu}`, '_blank');
     }
 
-    showError(message) {
-        this.showToast(message, 'error');
-    }
-
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
+    yuklemeGoster(mesaj, yuzde) {
+        this.yuklemeEkrani.style.display = 'flex';
+        const mesajElementi = this.yuklemeEkrani.querySelector('.mesaj');
+        const yuzdeElementi = this.yuklemeEkrani.querySelector('.yuzde');
+        const barDegeri = this.yuklemeEkrani.querySelector('.bar .deger');
         
-        const container = document.querySelector('.toast-container');
-        container.appendChild(toast);
-        
-        setTimeout(() => toast.remove(), 3000);
+        mesajElementi.textContent = mesaj;
+        yuzdeElementi.textContent = `${yuzde}%`;
+        barDegeri.style.width = `${yuzde}%`;
     }
 
-    startUpdateCycle() {
-        setInterval(() => this.refreshData(), CONFIG.UPDATE_INTERVAL);
+    yuklemeGizle() {
+        this.yuklemeEkrani.style.display = 'none';
+    }
+
+    guncellemeBaslat() {
+        setInterval(() => this.verileriGuncelle(), CONFIG.GUNCELLEME_SURESI);
+    }
+
+    async verileriGuncelle() {
+        try {
+            const odalar = await this.bypass.veriCek('list');
+            this.odalariGuncelle(odalar);
+        } catch (hata) {
+            console.error('Güncelleme hatası:', hata);
+        }
+    }
+
+    olaylariKur() {
+        // Yenile butonu
+        document.querySelector('.yenile').addEventListener('click', () => {
+            this.verileriGuncelle();
+        });
+
+        // Arama
+        document.querySelector('.arama input').addEventListener('input', (e) => {
+            this.aramaYap(e.target.value);
+        });
+
+        // Menü butonları
+        document.querySelectorAll('.menu-item').forEach(buton => {
+            buton.addEventListener('click', () => {
+                this.sayfaDegistir(buton.dataset.sayfa);
+            });
+        });
     }
 }
 
-// Initialize Application
-const app = new GarticEnhanced();
-window.addEventListener('load', () => app.initialize());
+// Uygulamayı başlat
+const uygulama = new GarticHack();
+window.addEventListener('load', () => uygulama.baslat());
