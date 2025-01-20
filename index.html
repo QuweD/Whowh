@@ -1,213 +1,137 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gartic ww v3</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Gartic Hack v3.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<div class="app-container">
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <img src="logo.png" alt="Gartic Enhanced" class="logo">
-            <span class="version">v2.5 PRO</span>
-        </div>
-
-        <div class="server-status">
-            <div class="status-indicator online"></div>
-            <span class="status-text">Connected</span>
-            <span class="server-id">EU-1</span>
-        </div>
-
-        <nav class="sidebar-nav">
-            <a href="#" class="nav-item active" data-page="dashboard">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#" class="nav-item" data-page="players">
-                <i class="fas fa-users"></i>
-                <span>Players</span>
-            </a>
-            <a href="#" class="nav-item" data-page="rooms">
-                <i class="fas fa-door-open"></i>
-                <span>Rooms</span>
-            </a>
-            <a href="#" class="nav-item" data-page="stats">
-                <i class="fas fa-chart-bar"></i>
-                <span>Statistics</span>
-            </a>
-            <a href="#" class="nav-item" data-page="settings">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="bypass-status">
-                <div class="status-indicator bypass-active"></div>
-                <span>Bypass Active</span>
-            </div>
-            <div class="connection-info">
-                <span class="ping">32ms</span>
-                <span class="uptime">02:45:12</span>
-            </div>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        <header class="top-bar">
-            <div class="search-container">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search players, rooms..." class="search-input">
-                <div class="search-filters">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="players">Players</button>
-                    <button class="filter-btn" data-filter="rooms">Rooms</button>
-                </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-dragon"></i>
+                <span>GarticHack</span>
             </div>
 
-            <div class="top-actions">
-                <button class="action-btn refresh-btn">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Refresh</span>
+            <div class="durum">
+                <div class="durum-isaret aktif"></div>
+                <span>Bypass Aktif</span>
+            </div>
+
+            <div class="menu">
+                <button class="menu-item aktif" data-sayfa="oyuncular">
+                    <i class="fas fa-users"></i>
+                    <span>Oyuncular</span>
                 </button>
-                <button class="action-btn settings-btn">
-                    <i class="fas fa-sliders-h"></i>
+                <button class="menu-item" data-sayfa="odalar">
+                    <i class="fas fa-door-open"></i>
+                    <span>Odalar</span>
+                </button>
+                <button class="menu-item" data-sayfa="ayarlar">
+                    <i class="fas fa-cog"></i>
+                    <span>Ayarlar</span>
                 </button>
             </div>
-        </header>
 
-        <div class="dashboard-grid">
-            <div class="stats-row">
-                <div class="stat-card total-players">
-                    <div class="stat-icon"><i class="fas fa-users"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value" data-stat="totalPlayers">0</div>
-                        <div class="stat-label">Total Players</div>
-                    </div>
+            <div class="bilgi">
+                <div class="ping">
+                    <i class="fas fa-signal"></i>
+                    <span>35ms</span>
                 </div>
-
-                <div class="stat-card active-rooms">
-                    <div class="stat-icon"><i class="fas fa-door-open"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value" data-stat="activeRooms">0</div>
-                        <div class="stat-label">Active Rooms</div>
-                    </div>
-                </div>
-
-                <div class="stat-card total-points">
-                    <div class="stat-icon"><i class="fas fa-star"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value" data-stat="totalPoints">0</div>
-                        <div class="stat-label">Total Points</div>
-                    </div>
-                </div>
-
-                <div class="stat-card bypass-success">
-                    <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value" data-stat="bypassRate">100%</div>
-                        <div class="stat-label">Bypass Success</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="data-container">
-                <div class="data-header">
-                    <h2>Active Players</h2>
-                    <div class="data-actions">
-                        <button class="action-btn sort-btn">
-                            <i class="fas fa-sort"></i>
-                        </button>
-                        <button class="action-btn filter-btn">
-                            <i class="fas fa-filter"></i>
-                        </button>
-                        <select class="server-select">
-                            <option value="all">All Servers</option>
-                            <option value="eu">Europe</option>
-                            <option value="us">America</option>
-                            <option value="as">Asia</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="players-grid" id="playersContainer"></div>
-            </div>
-
-            <div class="rooms-container">
-                <div class="rooms-header">
-                    <h2>Active Rooms</h2>
-                    <div class="rooms-actions">
-                        <button class="action-btn">
-                            <i class="fas fa-sort"></i>
-                        </button>
-                        <select class="language-select">
-                            <option value="all">All Languages</option>
-                            <option value="en">English</option>
-                            <option value="es">Spanish</option>
-                            <option value="pt">Portuguese</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="rooms-grid" id="roomsContainer"></div>
+                <div class="server">EU-1</div>
             </div>
         </div>
-    </main>
-</div>
 
-<div class="loading-overlay">
-    <div class="loading-content">
-        <div class="loader">
-            <div class="loader-spinner"></div>
-            <div class="loader-text">Initializing System</div>
-        </div>
-        <div class="loading-progress">
-            <div class="progress-track">
-                <div class="progress-bar"></div>
+        <div class="ana-icerik">
+            <div class="ust-bar">
+                <div class="arama">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Oyuncu veya oda ara...">
+                </div>
+
+                <div class="butonlar">
+                    <button class="yenile">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Yenile</span>
+                    </button>
+                </div>
             </div>
-            <div class="progress-status">
-                <span class="progress-percentage">0%</span>
-                <span class="progress-message">Loading...</span>
+
+            <div class="istatistik">
+                <div class="kart">
+                    <i class="fas fa-users"></i>
+                    <div class="deger">
+                        <span class="sayi" id="oyuncuSayi">0</span>
+                        <span class="baslik">Oyuncu</span>
+                    </div>
+                </div>
+
+                <div class="kart">
+                    <i class="fas fa-door-open"></i>
+                    <div class="deger">
+                        <span class="sayi" id="odaSayi">0</span>
+                        <span class="baslik">Oda</span>
+                    </div>
+                </div>
+
+                <div class="kart">
+                    <i class="fas fa-shield-alt"></i>
+                    <div class="deger">
+                        <span class="sayi" id="bypassOran">100%</span>
+                        <span class="baslik">Bypass</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="liste-baslik">
+                <h2>Aktif Oyuncular</h2>
+                <div class="filtreler">
+                    <select id="serverSecim">
+                        <option value="hepsi">Tüm Serverlar</option>
+                        <option value="eu">Avrupa</option>
+                        <option value="us">Amerika</option>
+                        <option value="as">Asya</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="oyuncu-liste" id="oyuncuListe"></div>
+            <div class="oda-liste" id="odaListe" style="display:none"></div>
+        </div>
+    </div>
+
+    <div class="yukleniyor" id="yukleniyor">
+        <div class="yukle-icerik">
+            <div class="spinner"></div>
+            <div class="mesaj">Sistem Başlatılıyor...</div>
+            <div class="ilerleme">
+                <div class="bar">
+                    <div class="deger"></div>
+                </div>
+                <span class="yuzde">0%</span>
             </div>
         </div>
     </div>
-</div>
 
-<div class="context-menu">
-    <div class="menu-item">
-        <i class="fas fa-eye"></i>
-        <span>View Profile</span>
+    <div class="sag-tik" id="sagTikMenu">
+        <div class="menu-item">
+            <i class="fas fa-eye"></i>
+            <span>Profili Görüntüle</span>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Odaya Katıl</span>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-copy"></i>
+            <span>ID Kopyala</span>
+        </div>
     </div>
-    <div class="menu-item">
-        <i class="fas fa-sign-in-alt"></i>
-        <span>Join Room</span>
-    </div>
-    <div class="menu-item">
-        <i class="fas fa-user-plus"></i>
-        <span>Follow Player</span>
-    </div>
-    <div class="menu-separator"></div>
-    <div class="menu-item">
-        <i class="fas fa-copy"></i>
-        <span>Copy User ID</span>
-    </div>
-</div>
 
-<div class="toast-container"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="bypass.js"></script>
-<script src="websocket.js"></script>
-<script src="script.js"></script>
-
+    <script src="bypass.js"></script>
+    <script src="socket.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
