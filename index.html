@@ -1,137 +1,380 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gartic Hack v3.0</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <title>Gartic Tracker Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #0d1117;
+            --secondary-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-color: #238636;
+            --danger-color: #da3633;
+            --warning-color: #9e6a03;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 6px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background-color: var(--secondary-bg);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        select, button {
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select:hover, button:hover {
+            border-color: var(--text-secondary);
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button.start {
+            background-color: var(--accent-color);
+            border-color: rgba(240, 246, 252, 0.1);
+        }
+
+        button.stop {
+            background-color: var(--danger-color);
+            border-color: rgba(240, 246, 252, 0.1);
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .player-card {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .player-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+        }
+
+        .player-info {
+            flex-grow: 1;
+        }
+
+        .player-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .player-stats {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .player-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .player-actions a {
+            flex: 1;
+            padding: 0.5rem;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            background-color: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .player-actions a:hover {
+            background-color: var(--border-color);
+        }
+
+        .loader {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--secondary-bg);
+            padding: 2rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .loader.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #proxyFrame {
+            display: none;
+        }
+
+        .debug-panel {
+            display: none;
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .debug-panel.active {
+            display: block;
+        }
+
+        .log-container {
+            background-color: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        .log-entry.error {
+            color: var(--danger-color);
+        }
+
+        .log-entry.warning {
+            color: var(--warning-color);
+        }
+
+        .log-entry.success {
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .players-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="sidebar">
-            <div class="logo">
-                <i class="fas fa-dragon"></i>
-                <span>GarticHack</span>
+    <div class="app-container">
+        <div class="header">
+            <h1><i class="fas fa-radar"></i> Gartic Tracker Pro</h1>
+            <p>Advanced Player Tracking System</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="serverSelect">Server Selection</label>
+                <select id="serverSelect" multiple>
+                    <option value="server01">Server 1</option>
+                    <option value="server02">Server 2</option>
+                    <option value="server03">Server 3</option>
+                    <option value="server04">Server 4</option>
+                    <option value="server05">Server 5</option>
+                    <option value="server06">Server 6</option>
+                </select>
             </div>
 
-            <div class="durum">
-                <div class="durum-isaret aktif"></div>
-                <span>Bypass Aktif</span>
+            <div class="control-group">
+                <label for="languageSelect">Language</label>
+                <select id="languageSelect">
+                    <option value="8">Türkçe</option>
+                    <option value="1">English</option>
+                    <option value="3">Español</option>
+                    <option value="2">Português</option>
+                    <option value="4">Русский</option>
+                </select>
             </div>
 
-            <div class="menu">
-                <button class="menu-item aktif" data-sayfa="oyuncular">
-                    <i class="fas fa-users"></i>
-                    <span>Oyuncular</span>
-                </button>
-                <button class="menu-item" data-sayfa="odalar">
-                    <i class="fas fa-door-open"></i>
-                    <span>Odalar</span>
-                </button>
-                <button class="menu-item" data-sayfa="ayarlar">
-                    <i class="fas fa-cog"></i>
-                    <span>Ayarlar</span>
-                </button>
+            <div class="control-group">
+                <label for="proxySelect">Proxy Method</label>
+                <select id="proxySelect">
+                    <option value="iframe">IFrame Proxy</option>
+                    <option value="websocket">Direct WebSocket</option>
+                    <option value="mixed">Mixed Mode</option>
+                </select>
             </div>
 
-            <div class="bilgi">
-                <div class="ping">
-                    <i class="fas fa-signal"></i>
-                    <span>35ms</span>
-                </div>
-                <div class="server">EU-1</div>
+            <div class="control-group">
+                <label>Actions</label>
+                <button class="start" onclick="startTracking()">
+                    <i class="fas fa-play"></i> Start Tracking
+                </button>
+                <button class="stop" onclick="stopTracking()">
+                    <i class="fas fa-stop"></i> Stop Tracking
+                </button>
             </div>
         </div>
 
-        <div class="ana-icerik">
-            <div class="ust-bar">
-                <div class="arama">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Oyuncu veya oda ara...">
-                </div>
-
-                <div class="butonlar">
-                    <button class="yenile">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Yenile</span>
-                    </button>
-                </div>
+        <div class="stats-panel">
+            <div class="stat-card">
+                <h3>Active Players</h3>
+                <div id="playerCount" class="value">0</div>
             </div>
-
-            <div class="istatistik">
-                <div class="kart">
-                    <i class="fas fa-users"></i>
-                    <div class="deger">
-                        <span class="sayi" id="oyuncuSayi">0</span>
-                        <span class="baslik">Oyuncu</span>
-                    </div>
-                </div>
-
-                <div class="kart">
-                    <i class="fas fa-door-open"></i>
-                    <div class="deger">
-                        <span class="sayi" id="odaSayi">0</span>
-                        <span class="baslik">Oda</span>
-                    </div>
-                </div>
-
-                <div class="kart">
-                    <i class="fas fa-shield-alt"></i>
-                    <div class="deger">
-                        <span class="sayi" id="bypassOran">100%</span>
-                        <span class="baslik">Bypass</span>
-                    </div>
-                </div>
+            <div class="stat-card">
+                <h3>Active Rooms</h3>
+                <div id="roomCount" class="value">0</div>
             </div>
-
-            <div class="liste-baslik">
-                <h2>Aktif Oyuncular</h2>
-                <div class="filtreler">
-                    <select id="serverSecim">
-                        <option value="hepsi">Tüm Serverlar</option>
-                        <option value="eu">Avrupa</option>
-                        <option value="us">Amerika</option>
-                        <option value="as">Asya</option>
-                    </select>
-                </div>
+            <div class="stat-card">
+                <h3>Connected Servers</h3>
+                <div id="serverCount" class="value">0</div>
             </div>
+            <div class="stat-card">
+                <h3>Update Rate</h3>
+                <div id="updateRate" class="value">0/s</div>
+            </div>
+        </div>
 
-            <div class="oyuncu-liste" id="oyuncuListe"></div>
-            <div class="oda-liste" id="odaListe" style="display:none"></div>
+        <div id="players" class="players-grid"></div>
+
+        <div class="debug-panel" id="debugPanel">
+            <h3>Debug Log</h3>
+            <div class="log-container" id="logContainer"></div>
         </div>
     </div>
 
-    <div class="yukleniyor" id="yukleniyor">
-        <div class="yukle-icerik">
-            <div class="spinner"></div>
-            <div class="mesaj">Sistem Başlatılıyor...</div>
-            <div class="ilerleme">
-                <div class="bar">
-                    <div class="deger"></div>
-                </div>
-                <span class="yuzde">0%</span>
-            </div>
-        </div>
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div id="loaderText">Initializing tracking system...</div>
     </div>
 
-    <div class="sag-tik" id="sagTikMenu">
-        <div class="menu-item">
-            <i class="fas fa-eye"></i>
-            <span>Profili Görüntüle</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-sign-in-alt"></i>
-            <span>Odaya Katıl</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-copy"></i>
-            <span>ID Kopyala</span>
-        </div>
-    </div>
+    <iframe id="proxyFrame" sandbox="allow-scripts allow-same-origin"></iframe>
 
-    <script src="bypass.js"></script>
-    <script src="socket.js"></script>
-    <script src="script.js"></script>
+    <script src="js/proxy.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
