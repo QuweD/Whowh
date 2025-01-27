@@ -1,332 +1,285 @@
-// Temel Ayarlar
-const CONFIG = {
-    API_URL: 'https://gartic.io/req/',
-    WS_URL: 'wss://server{}.gartic.io/',
-    SUNUCULAR: ['01', '02', '03', '04', '05', '06'],
-    GUNCELLEME_SURESI: 3000,
-    DENEME_SAYISI: 3,
-    BYPASS_METODLARI: ['iframe', 'websocket', 'xhr']
-};
-
-// WebSocket Yöneticisi
-class WebSocketYonetici {
+class GarticTracker {
     constructor() {
-        this.baglanti = new Map();
-        this.mesajKuyrugu = [];
-        this.yenidenBaglanmaSayisi = 0;
-        this.aktifSunucu = null;
-    }
-
-    baglan(sunucu) {
-        const ws = new WebSocket(CONFIG.WS_URL.replace('{}', sunucu));
-        
-        ws.onopen = () => {
-            console.log(`${sunucu} sunucusuna bağlanıldı`);
-            this.baglantiKur(ws, sunucu);
+        this.players = new Map();
+        this.rooms = new Map();
+        this.connections = new Map();
+        this.isTracking = false;
+        this.updateInterval = null;
+        this.proxyFrames = new Map();
+        this.stats = {
+            playerCount: 0,
+            roomCount: 0,
+            serverCount: 0,
+            updateRate: 0
         };
-
-        ws.onmessage = (event) => this.mesajAl(event.data, sunucu);
-        
-        ws.onerror = (hata) => {
-            console.error(`WebSocket hatası (${sunucu}):`, hata);
-            this.hataYonet(sunucu);
-        };
-
-        ws.onclose = () => this.baglantiyiKapat(sunucu);
-        
-        this.baglanti.set(sunucu, ws);
+        this.lastUpdateTime = Date.now();
+        this.updateCount = 0;
     }
 
-    baglantiKur(ws, sunucu) {
-        ws.send('2probe');
-        ws.send('5');
-        this.odalaraKatil(sunucu);
-        this.aktifSunucu = sunucu;
-        uygulama.durumGuncelle('bağlı');
+    async init() {
+        this.setupMessageHandlers();
+        this.createProxyFrames();
+        this.setupWebSocketInterceptor();
     }
 
-    mesajAl(veri, sunucu) {
-        if (veri.startsWith('42')) {
-            try {
-                const [olay, data] = JSON.parse(veri.slice(2));
-                this.mesajIsleme(olay, data, sunucu);
-            } catch (hata) {
-                console.error('Mesaj ayrıştırma hatası:', hata);
-            }
-        }
-    }
-
-    mesajIsleme(olay, veri, sunucu) {
-        switch(olay) {
-            case 'odalar':
-                uygulama.odalariGuncelle(veri);
-                break;
-            case 'oyuncular':
-                uygulama.oyunculariGuncelle(veri);
-                break;
-            case 'cizim':
-                uygulama.cizimVerisiAl(veri);
-                break;
-        }
-    }
-
-    odayaKatil(odaKodu) {
-        const mesaj = `42["katil",{"oda":"${odaKodu}","v":20000}]`;
-        this.mesajGonder(mesaj);
-    }
-
-    mesajGonder(mesaj) {
-        if (this.aktifSunucu && this.baglanti.get(this.aktifSunucu)?.readyState === WebSocket.OPEN) {
-            this.baglanti.get(this.aktifSunucu).send(mesaj);
-        } else {
-            this.mesajKuyrugu.push(mesaj);
-        }
-    }
-}
-
-// Bypass Sistemi
-class BypassSistemi {
-    constructor() {
-        this.metod = CONFIG.BYPASS_METODLARI[0];
-        this.basariOrani = 100;
-        this.engellendi = false;
-        this.iframe = null;
-    }
-
-    async baslat() {
-        await this.bypassKur();
-        this.nabizKontrol();
-    }
-
-    async bypassKur() {
-        this.iframe = document.createElement('iframe');
-        this.iframe.style.display = 'none';
-        this.iframe.src = 'https://gartic.io';
-        document.body.appendChild(this.iframe);
-
-        return new Promise(resolve => {
-            this.iframe.onload = () => {
-                console.log('Bypass iframe yüklendi');
-                resolve();
-            };
+    createProxyFrames() {
+        const servers = ['server01', 'server02', 'server03', 'server04', 'server05', 'server06'];
+        servers.forEach(server => {
+            const frame = document.createElement('iframe');
+            frame.style.display = 'none';
+            frame.sandbox = 'allow-scripts allow-same-origin';
+            frame.srcdoc = this.generateProxyFrameContent(server);
+            document.body.appendChild(frame);
+            this.proxyFrames.set(server, frame);
         });
     }
 
-    async veriCek(endpoint, ayarlar = {}) {
-        if (this.engellendi) {
-            await this.metodDegistir();
-        }
-
-        try {
-            const yanit = await this.istekGonder(endpoint, ayarlar);
-            this.basariOraniniGuncelle(true);
-            return yanit;
-        } catch (hata) {
-            this.basariOraniniGuncelle(false);
-            throw hata;
-        }
-    }
-
-    async istekGonder(endpoint, ayarlar) {
-        const url = CONFIG.API_URL + endpoint;
-        const varsayilanAyarlar = {
-            headers: {
-                'Origin': 'https://gartic.io',
-                'Referer': 'https://gartic.io/',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
-            }
-        };
-
-        const istekAyarlari = { ...varsayilanAyarlar, ...ayarlar };
-        
-        switch (this.metod) {
-            case 'iframe':
-                return this.iframeIstegi(url, istekAyarlari);
-            case 'websocket':
-                return this.wsIstegi(url, istekAyarlari);
-            case 'xhr':
-                return this.xhrIstegi(url, istekAyarlari);
-        }
-    }
-
-    basariOraniniGuncelle(basarili) {
-        const agirlik = 0.3;
-        this.basariOrani = this.basariOrani * (1 - agirlik) + (basarili ? 100 : 0) * agirlik;
-        uygulama.bypassDurumunuGuncelle(this.basariOrani);
-    }
-}
-
-// Ana Uygulama
-class GarticHack {
-    constructor() {
-        this.ws = new WebSocketYonetici();
-        this.bypass = new BypassSistemi();
-        this.odalar = new Map();
-        this.oyuncular = new Map();
-        this.yuklemeEkrani = document.getElementById('yukleniyor');
-        this.oyuncuListesi = document.getElementById('oyuncuListe');
-        this.odaListesi = document.getElementById('odaListe');
-    }
-
-    async baslat() {
-        try {
-            this.yuklemeGoster('Sistem başlatılıyor...', 0);
-            await this.bypass.baslat();
-            this.yuklemeGoster('Bypass sistemi hazır', 30);
-            
-            await this.sunucularaBaglan();
-            this.yuklemeGoster('Sunuculara bağlanıldı', 60);
-            
-            await this.ilkVerileriYukle();
-            this.yuklemeGoster('Veriler yüklendi', 90);
-            
-            this.olaylariKur();
-            this.guncellemeBaslat();
-            
-            this.yuklemeGoster('Sistem hazır', 100);
-            setTimeout(() => this.yuklemeGizle(), 1000);
-        } catch (hata) {
-            console.error('Başlatma hatası:', hata);
-            this.hataGoster('Sistem başlatılamadı');
-        }
-    }
-
-    async sunucularaBaglan() {
-        CONFIG.SUNUCULAR.forEach(sunucu => {
-            this.ws.baglan(sunucu);
-        });
-    }
-
-    async ilkVerileriYukle() {
-        try {
-            const odalar = await this.bypass.veriCek('list');
-            this.odalariGuncelle(odalar);
-        } catch (hata) {
-            console.error('Veri yükleme hatası:', hata);
-            throw hata;
-        }
-    }
-
-    odalariGuncelle(odalar) {
-        this.odalar.clear();
-        odalar.forEach(oda => {
-            if (oda.quant > 0) {
-                this.odalar.set(oda.code, {
-                    kod: oda.code,
-                    oyuncuSayisi: oda.quant,
-                    dil: oda.lang,
-                    zaman: Date.now()
-                });
-            }
-        });
-        this.arayuzuGuncelle();
-    }
-
-    oyunculariGuncelle(veri) {
-        if (veri.oyuncular) {
-            veri.oyuncular.forEach(oyuncu => {
-                this.oyuncular.set(oyuncu.id, {
-                    id: oyuncu.id,
-                    isim: oyuncu.nick,
-                    puan: oyuncu.points,
-                    avatar: oyuncu.avatar,
-                    oda: veri.oda,
-                    sonGorulme: Date.now()
-                });
-            });
-            this.arayuzuGuncelle();
-        }
-    }
-
-    arayuzuGuncelle() {
-        // İstatistikleri güncelle
-        document.getElementById('oyuncuSayi').textContent = this.oyuncular.size;
-        document.getElementById('odaSayi').textContent = this.odalar.size;
-        
-        // Oyuncu listesini güncelle
-        if (this.oyuncuListesi) {
-            this.oyuncuListesi.innerHTML = Array.from(this.oyuncular.values())
-                .map(oyuncu => this.oyuncuKartiOlustur(oyuncu))
-                .join('');
-        }
-    }
-
-    oyuncuKartiOlustur(oyuncu) {
+    generateProxyFrameContent(server) {
         return `
-            <div class="oyuncu-kart" data-id="${oyuncu.id}">
-                <div class="oyuncu-ust">
-                    <img src="https://gartic.io/static/images/avatar/svg/${oyuncu.avatar}.svg" 
-                         alt="${oyuncu.isim}" class="avatar">
-                    <div class="bilgi">
-                        <div class="isim">${oyuncu.isim}</div>
-                        <div class="oda">Oda: ${oyuncu.oda}</div>
-                    </div>
-                </div>
-                <div class="oyuncu-alt">
-                    <div class="puan">
-                        <i class="fas fa-star"></i>
-                        <span>${oyuncu.puan}</span>
-                    </div>
-                    <button onclick="uygulama.odayaKatil('${oyuncu.oda}')" class="katil-btn">
-                        Katıl
-                    </button>
-                </div>
-            </div>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <script>
+                    class WebSocketProxy {
+                        constructor() {
+                            this.connections = new Map();
+                            this.server = '${server}';
+                            this.setupMessageHandler();
+                        }
+
+                        setupMessageHandler() {
+                            window.addEventListener('message', (event) => {
+                                if (event.data.type === 'connect') {
+                                    this.connect(event.data.room);
+                                } else if (event.data.type === 'disconnect') {
+                                    this.disconnectAll();
+                                }
+                            });
+                        }
+
+                        connect(roomCode) {
+                            const ws = new WebSocket(\`wss://${server}.gartic.io/socket.io/?EIO=3&transport=websocket\`);
+                            
+                            ws.onopen = () => {
+                                const headers = {
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                                    'Origin': 'https://gartic.io',
+                                    'Referer': 'https://gartic.io/'
+                                };
+
+                                ws.send(\`42["init",{"v":20000,"platform":0,"sala":"\${roomCode}"}]\`);
+                                
+                                Object.entries(headers).forEach(([key, value]) => {
+                                    try {
+                                        ws._socket.setHeader(key, value);
+                                    } catch(e) {}
+                                });
+                            };
+
+                            ws.onmessage = (event) => {
+                                if (event.data.startsWith('42')) {
+                                    try {
+                                        const data = JSON.parse(event.data.slice(2));
+                                        window.parent.postMessage({
+                                            type: 'wsMessage',
+                                            server: this.server,
+                                            room: roomCode,
+                                            data: data
+                                        }, '*');
+                                    } catch(e) {}
+                                }
+                            };
+
+                            this.connections.set(roomCode, ws);
+                        }
+
+                        disconnectAll() {
+                            this.connections.forEach(ws => ws.close());
+                            this.connections.clear();
+                        }
+                    }
+
+                    new WebSocketProxy();
+                </script>
+            </head>
+            <body></body>
+            </html>
         `;
     }
 
-    odayaKatil(odaKodu) {
-        window.open(`https://gartic.io/${odaKodu}`, '_blank');
+    setupMessageHandlers() {
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'wsMessage') {
+                this.handleWebSocketMessage(event.data);
+            }
+        });
     }
 
-    yuklemeGoster(mesaj, yuzde) {
-        this.yuklemeEkrani.style.display = 'flex';
-        const mesajElementi = this.yuklemeEkrani.querySelector('.mesaj');
-        const yuzdeElementi = this.yuklemeEkrani.querySelector('.yuzde');
-        const barDegeri = this.yuklemeEkrani.querySelector('.bar .deger');
-        
-        mesajElementi.textContent = mesaj;
-        yuzdeElementi.textContent = `${yuzde}%`;
-        barDegeri.style.width = `${yuzde}%`;
+    setupWebSocketInterceptor() {
+        const originalWebSocket = window.WebSocket;
+        window.WebSocket = function(url, protocols) {
+            const ws = new originalWebSocket(url, protocols);
+            ws.addEventListener('message', (event) => {
+                if (event.data.startsWith('42')) {
+                    try {
+                        const data = JSON.parse(event.data.slice(2));
+                        window.dispatchEvent(new CustomEvent('wsMessage', { detail: data }));
+                    } catch(e) {}
+                }
+            });
+            return ws;
+        };
     }
 
-    yuklemeGizle() {
-        this.yuklemeEkrani.style.display = 'none';
-    }
-
-    guncellemeBaslat() {
-        setInterval(() => this.verileriGuncelle(), CONFIG.GUNCELLEME_SURESI);
-    }
-
-    async verileriGuncelle() {
+    async getRooms(language) {
         try {
-            const odalar = await this.bypass.veriCek('list');
-            this.odalariGuncelle(odalar);
-        } catch (hata) {
-            console.error('Güncelleme hatası:', hata);
+            const response = await fetch(`https://gartic.io/req/list?search=&language[]=${language}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Referer': 'https://gartic.io/',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+            });
+            return await response.json();
+        } catch(e) {
+            return [];
         }
     }
 
-    olaylariKur() {
-        // Yenile butonu
-        document.querySelector('.yenile').addEventListener('click', () => {
-            this.verileriGuncelle();
-        });
-
-        // Arama
-        document.querySelector('.arama input').addEventListener('input', (e) => {
-            this.aramaYap(e.target.value);
-        });
-
-        // Menü butonları
-        document.querySelectorAll('.menu-item').forEach(buton => {
-            buton.addEventListener('click', () => {
-                this.sayfaDegistir(buton.dataset.sayfa);
+    handleWebSocketMessage(message) {
+        if (message.data[0] === 5) {
+            const players = message.data[5];
+            players.forEach(player => {
+                const key = `${player.id}-${message.server}`;
+                this.players.set(key, {
+                    id: player.id,
+                    nick: player.nick,
+                    points: player.pontos,
+                    avatar: player.avatar,
+                    foto: player.foto,
+                    room: `https://gartic.io/${message.room}`,
+                    server: message.server,
+                    timestamp: Date.now()
+                });
             });
+
+            this.updateCount++;
+            this.updateStats();
+            this.updateUI();
+        }
+    }
+
+    updateStats() {
+        const now = Date.now();
+        const timeDiff = (now - this.lastUpdateTime) / 1000;
+        
+        this.stats.playerCount = this.players.size;
+        this.stats.roomCount = this.rooms.size;
+        this.stats.serverCount = this.connections.size;
+        this.stats.updateRate = Math.round(this.updateCount / timeDiff);
+
+        if (timeDiff >= 1) {
+            this.lastUpdateTime = now;
+            this.updateCount = 0;
+        }
+
+        document.getElementById('playerCount').textContent = this.stats.playerCount;
+        document.getElementById('roomCount').textContent = this.stats.roomCount;
+        document.getElementById('serverCount').textContent = this.stats.serverCount;
+        document.getElementById('updateRate').textContent = `${this.stats.updateRate}/s`;
+    }
+
+    updateUI() {
+        const container = document.getElementById('players');
+        container.innerHTML = '';
+
+        const currentTime = Date.now();
+        const activePlayers = Array.from(this.players.values())
+            .filter(p => currentTime - p.timestamp < 30000)
+            .sort((a, b) => b.points - a.points);
+
+        activePlayers.forEach(player => {
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.innerHTML = `
+                <div class="player-header">
+                    <img class="player-avatar" src="${player.foto || `https://gartic.io/static/images/avatar/svg/${player.avatar}.svg`}">
+                    <div class="player-info">
+                        <div class="player-name">${player.nick}</div>
+                        <div class="player-stats">${player.points} points • ${player.server}</div>
+                    </div>
+                </div>
+                <div class="player-actions">
+                    <a href="${player.room}" target="_blank">Join Room</a>
+                    <a href="${player.room}/viewer" target="_blank">Watch</a>
+                </div>
+            `;
+            container.appendChild(card);
         });
+    }
+
+    async startTracking() {
+        if (this.isTracking) return;
+        this.isTracking = true;
+
+        const language = document.getElementById('languageSelect').value;
+        const selectedServers = Array.from(document.getElementById('serverSelect').selectedOptions).map(opt => opt.value);
+
+        document.getElementById('loader').classList.add('active');
+
+        try {
+            const rooms = await this.getRooms(language);
+            rooms.forEach(room => {
+                if (room.quant > 0) {
+                    selectedServers.forEach(server => {
+                        this.proxyFrames.get(server).contentWindow.postMessage({
+                            type: 'connect',
+                            room: room.code
+                        }, '*');
+                        
+                        this.rooms.set(room.code, room);
+                        this.connections.set(`${server}-${room.code}`, true);
+                    });
+                }
+            });
+
+            this.updateInterval = setInterval(() => {
+                const currentTime = Date.now();
+                for (const [key, player] of this.players.entries()) {
+                    if (currentTime - player.timestamp > 30000) {
+                        this.players.delete(key);
+                    }
+                }
+                this.updateUI();
+                this.updateStats();
+            }, 1000);
+
+        } catch(e) {
+            console.error('Tracking error:', e);
+        } finally {
+            document.getElementById('loader').classList.remove('active');
+        }
+    }
+
+    stopTracking() {
+        if (!this.isTracking) return;
+        this.isTracking = false;
+
+        this.proxyFrames.forEach(frame => {
+            frame.contentWindow.postMessage({ type: 'disconnect' }, '*');
+        });
+
+        clearInterval(this.updateInterval);
+        this.players.clear();
+        this.rooms.clear();
+        this.connections.clear();
+        this.updateUI();
+        this.updateStats();
     }
 }
 
-// Uygulamayı başlat
-const uygulama = new GarticHack();
-window.addEventListener('load', () => uygulama.baslat());
+const tracker = new GarticTracker();
+tracker.init();
+
+window.startTracking = () => tracker.startTracking();
+window.stopTracking = () => tracker.stopTracking();
