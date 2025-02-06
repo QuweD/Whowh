@@ -3,354 +3,511 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gartic özel chat</title>
+    <title>AkiraChat</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body, html {
+        :root {
+            --primary: #7289da;
+            --secondary: #99aab5;
+            --dark: #2c2f33;
+            --darker: #23272a;
+            --light: #ffffff;
+            --success: #43b581;
+            --danger: #f04747;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            height: 100%;
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
-            background-attachment: fixed;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: var(--darker);
+            color: var(--light);
+            height: 100vh;
             overflow: hidden;
         }
-        #setupScreen {
+
+        .login-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background: rgba(0,0,0,0.9);
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.85);
+            align-items: center;
+            z-index: 1000;
             backdrop-filter: blur(10px);
-            z-index: 100000;
         }
-        .setup-container {
-            background: linear-gradient(145deg, #1e2130, #2a3147);
-            padding: 2.5rem;
-            border-radius: 20px;
+
+        .login-container {
+            background: var(--dark);
+            padding: 2rem;
+            border-radius: 10px;
             width: 90%;
             max-width: 400px;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .avatar-upload {
             text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
         }
-        .setup-title {
-            color: #fff;
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            font-weight: 700;
-        }
-        #usernameInput {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-        #usernameInput:focus {
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-            outline: none;
-        }
+
         .avatar-preview {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            margin: 20px auto;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        .setup-button {
-            background: linear-gradient(45deg, #4a90e2, #63b3ed);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
+            margin: 10px auto;
+            background: var(--secondary);
             cursor: pointer;
-            font-size: 16px;
-            margin: 10px;
+            overflow: hidden;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
         }
-        .setup-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4);
+
+        .avatar-preview:hover {
+            transform: scale(1.05);
         }
-        #messagesContainer {
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            height: 100vh;
+            gap: 1px;
+            background: var(--dark);
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.3s ease;
+        }
+
+        .container.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .sidebar {
+            background: var(--dark);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            background: var(--darker);
+        }
+
+        .chat-header {
+            padding: 1rem;
+            background: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
-            margin-bottom: 70px;
-            height: calc(100vh - 150px);
-            box-sizing: border-box;
+            padding: 1rem;
+            scroll-behavior: smooth;
         }
-        .message-box {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 15px;
-            animation: slideIn 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .message-header {
+
+        .message {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 1rem;
+            animation: messageIn 0.3s ease;
         }
-        .message-user-info {
-            display: flex;
-            align-items: center;
+
+        @keyframes messageIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
-        .message-avatar {
+
+        .message .avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            margin-right: 10px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
         }
-        .message-username {
-            color: #4a90e2;
-            font-weight: bold;
+
+        .message .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
-        .message-time {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.8rem;
+
+        .message .content {
+            flex: 1;
+            background: var(--dark);
+            padding: 1rem;
+            border-radius: 10px;
+            position: relative;
         }
-        .message-content {
-            color: #fff;
-            word-break: break-word;
-            line-height: 1.5;
+
+        .message .content::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 10px;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid var(--dark);
         }
-        #inputContainer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 15px;
-            background: rgba(26, 32, 44, 0.95);
-            backdrop-filter: blur(10px);
+
+        .message.sent {
+            flex-direction: row-reverse;
+        }
+
+        .message.sent .content {
+            background: var(--primary);
+        }
+
+        .message.sent .content::before {
+            left: auto;
+            right: -8px;
+            border-right: none;
+            border-left: 8px solid var(--primary);
+        }
+
+        .input-area {
+            padding: 1rem;
+            background: var(--dark);
             display: flex;
             gap: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
         }
-        #messageInput {
-            flex: 1;
+
+        .input-area .attachment {
+            padding: 10px;
+            cursor: pointer;
+            color: var(--secondary);
+            transition: color 0.3s ease;
+        }
+
+        .input-area .attachment:hover {
+            color: var(--primary);
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background: var(--darker);
+            color: var(--light);
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button {
             padding: 12px 20px;
             border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-        }
-        #messageInput:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.15);
-        }
-        .action-button {
-            background: linear-gradient(45deg, #4a90e2, #63b3ed);
-            color: white;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+            border-radius: 5px;
+            background: var(--primary);
+            color: var(--light);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: all 0.3s ease;
         }
-        .action-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+
+        button:hover {
+            background: #5b73d1;
+            transform: translateY(-2px);
         }
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+
+        .users-list {
+            list-style: none;
         }
-        #notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: rgba(74, 144, 226, 0.9);
-            color: white;
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
-            transform: translateX(200%);
-            transition: transform 0.3s ease;
-            z-index: 100001;
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-item:hover {
+            background: var(--darker);
+        }
+
+        .user-item .status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .typing {
+            padding: 5px 10px;
+            color: var(--secondary);
+            font-style: italic;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: var(--dark);
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+        }
+
+        .emoji-picker.active {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+        }
+
+        .emoji {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            transition: background 0.3s ease;
+        }
+
+        .emoji:hover {
+            background: var(--darker);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="setupScreen">
-        <div class="setup-container">
-            <h1 class="setup-title">Chat Setup</h1>
-            <input type="text" id="usernameInput" placeholder="Kullanıcı Adınız" maxlength="20">
-            <div class="avatar-preview" id="avatarPreview"></div>
-            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
-            <button class="setup-button" id="uploadAvatarBtn">Avatar Seç</button>
-            <button class="setup-button" id="applyBtn">Sohbete Katıl</button>
-        </div>
-    </div>
-    <div id="notification"></div>
-    <div id="chatApp" style="display:none;">
-        <div id="messagesContainer"></div>
-        <div id="inputContainer">
-            <input type="text" id="messageInput" placeholder="Mesajınızı yazın...">
-            <input type="file" id="imageInput" accept="image/*" style="display: none;">
-            <button class="action-button" id="imageButton">📎</button>
-            <button class="action-button" id="sendButton">➤</button>
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="avatar-upload">
+                <div class="avatar-preview" onclick="document.getElementById('avatarInput').click()">
+                    <img id="avatarPreview" src="https://via.placeholder.com/100" alt="Avatar">
+                </div>
+                <input type="file" id="avatarInput" accept="image/*">
+            </div>
+            <input type="password" id="passwordInput" placeholder="Şifre" autofocus>
+            <input type="text" id="usernameInput" placeholder="Kullanıcı adı" style="display: none">
+            <button onclick="checkPassword()">Giriş</button>
         </div>
     </div>
 
+    <div class="container" id="chatScreen">
+        <div class="sidebar">
+            <h3>Çevrimiçi Kullanıcılar</h3>
+            <ul class="users-list" id="usersList"></ul>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="status"></div>
+                <h3>AkiraChat</h3>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="typing" id="typing"></div>
+            <div class="input-area">
+                <label class="attachment">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" id="fileInput" multiple>
+                </label>
+                <input type="text" id="messageInput" placeholder="Mesajınızı yazın...">
+                <div class="emoji-picker" id="emojiPicker"></div>
+                <button onclick="toggleEmoji()"><i class="far fa-smile"></i></button>
+                <button onclick="sendMessage()">Gönder</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h3>Dosyalar</h3>
+            <div id="filesList"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const WEBSOCKET_URL = 'wss://possible-thread-gander.glitch.me/';
-        const ws = new WebSocket(WEBSOCKET_URL);
+        const socket = io();
         let username = '';
         let avatar = '';
-
-        function showNotification(message) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.style.transform = 'translateX(0)';
-            setTimeout(() => {
-                notification.style.transform = 'translateX(200%)';
-            }, 2000);
+        const PASSWORD = 'akirachat';
+        
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === PASSWORD) {
+                document.getElementById('passwordInput').style.display = 'none';
+                document.getElementById('usernameInput').style.display = 'block';
+                document.getElementById('usernameInput').focus();
+                document.querySelector('.login-container button').onclick = login;
+            } else {
+                alert('Yanlış şifre!');
+            }
         }
 
-        function formatTime(date) {
-            return new Date(date).toLocaleTimeString('tr-TR', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        function addMessageToChat(message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message-box';
-            messageDiv.innerHTML = `
-                <div class="message-header">
-                    <div class="message-user-info">
-                        <img src="${message.avatar}" class="message-avatar" alt="avatar">
-                        <span class="message-username">${message.username}</span>
-                    </div>
-                    <span class="message-time">${formatTime(message.timestamp)}</span>
-                </div>
-                <div class="message-content">${message.content}</div>
-            `;
-
-            const messagesContainer = document.getElementById('messagesContainer');
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        document.getElementById('uploadAvatarBtn').addEventListener('click', () => {
-            document.getElementById('avatarFileInput').click();
-        });
-
-        document.getElementById('avatarFileInput').addEventListener('change', (e) => {
+        document.getElementById('avatarInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = function(e) {
+                    document.getElementById('avatarPreview').src = e.target.result;
                     avatar = e.target.result;
-                    document.getElementById('avatarPreview').style.backgroundImage = `url(${avatar})`;
-                    showNotification('Avatar eklendi');
-                };
+                }
                 reader.readAsDataURL(file);
             }
         });
 
-        document.getElementById('applyBtn').addEventListener('click', () => {
+        function login() {
             username = document.getElementById('usernameInput').value.trim();
-            if (!username || !avatar) {
-                showNotification('Lütfen kullanıcı adı ve avatar seçin');
-                return;
+            if (username) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('chatScreen').classList.add('visible');
+                socket.emit('login', { username, avatar });
             }
-            document.getElementById('setupScreen').style.display = 'none';
-            document.getElementById('chatApp').style.display = 'flex';
-            
-            ws.send(JSON.stringify({
-                type: 'login',
-                username: username,
-                avatar: avatar
-            }));
-        });
+        }
 
-        document.getElementById('imageButton').addEventListener('click', () => {
-            document.getElementById('imageInput').click();
-        });
-
-        document.getElementById('imageInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const message = {
-                        type: 'message',
-                        username: username,
-                        avatar: avatar,
-                        content: `<img src="${e.target.result}" style="max-width: 200px; border-radius: 10px;">`,
-                        timestamp: new Date().toISOString()
-                    };
-                    ws.send(JSON.stringify(message));
-                    addMessageToChat(message);
-                };
+                reader.onload = function(e) {
+                    socket.emit('file', {
+                        name: file.name,
+                        type: file.type,
+                        data: e.target.result
+                    });
+                }
                 reader.readAsDataURL(file);
-            }
+            });
         });
 
-        document.getElementById('sendButton').addEventListener('click', () => {
-            const content = document.getElementById('messageInput').value.trim();
-            if (content) {
-                const message = {
-                    type: 'message',
-                    username: username,
-                    avatar: avatar,
-                    content: content,
-                    timestamp: new Date().toISOString()
-                };
-                ws.send(JSON.stringify(message));
-                document.getElementById('messageInput').value = '';
-                addMessageToChat(message);
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (message) {
+                socket.emit('sendMessage', {
+                    text: message,
+                    avatar: avatar
+                });
+                input.value = '';
             }
+        }
+
+        const emojis = ['😀', '😂', '😍', '🥰', '😎', '🤔', '😴', '😭', '🥳', '🤯', '🤡', '👻', '👍', '❤️', '🔥', '⭐'];
+        const emojiPicker = document.getElementById('emojiPicker');
+        emojis.forEach(emoji => {
+            const span = document.createElement('span');
+            span.className = 'emoji';
+            span.textContent = emoji;
+            span.onclick = () => {
+                document.getElementById('messageInput').value += emoji;
+            }
+            emojiPicker.appendChild(span);
         });
+
+        function toggleEmoji() {
+            emojiPicker.classList.toggle('active');
+        }
 
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('sendButton').click();
-            }
+            if (e.key === 'Enter') sendMessage();
         });
 
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                if (message.type === 'message') {
-                    addMessageToChat(message);
-                }
-            } catch (error) {
-                console.error('Message parsing error:', error);
-            }
-        };
+        let typingTimeout;
+        document.getElementById('messageInput').addEventListener('input', () => {
+            socket.emit('typing');
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => socket.emit('stopTyping'), 1000);
+        });
 
-        window.addEventListener('beforeunload', () => {
-           
+        socket.on('message', (data) => {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${data.username === username ? 'sent' : ''}`;
+            messageElement.innerHTML = `
+                <div class="avatar">
+                    <img src="${data.avatar || 'https://via.placeholder.com/40'}" alt="Avatar">
+                </div>
+                <div class="content">
+                    <strong>${data.username}</strong>
+                    <p>${data.text}</p>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                </div>
+            `;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        socket.on('file', (data) => {
+            const filesList = document.getElementById('filesList');
+            const fileElement = document.createElement('div');
+            fileElement.innerHTML = `
+                <a href="${data.data}" download="${data.name}">
+                    ${data.name}
+                </a>
+            `;
+            filesList.appendChild(fileElement);
+        });
+
+        socket.on('userList', (users) => {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = users.map(user => `
+                <li class="user-item">
+                    <div class="status"></div>
+                    <div class="avatar">
+                        <img src="${user.avatar || 'https://via.placeholder.com/40'}" alt="Avatar">
+                    </div>
+                    ${user.username}
+                </li>
+            `).join('');
+        });
+
+        socket.on('userTyping', (user) => {
+            document.getElementById('typing').textContent = `${user} yazıyor...`;
+            setTimeout(() => {
+                document.getElementById('typing').textContent = '';
+            }, 1000);
         });
     </script>
 </body>
